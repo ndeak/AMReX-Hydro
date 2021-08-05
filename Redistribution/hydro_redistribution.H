@@ -22,7 +22,11 @@ namespace Redistribution {
                  amrex::Array4<amrex::Real const> const& ccent,
                  amrex::BCRec  const* d_bcrec_ptr,
                  amrex::Geometry const& geom, 
-                 amrex::Real dt, std::string redistribution_type);
+                 amrex::Real dt, std::string redistribution_type
+#ifdef PELEC_USE_PLASMA
+               , int ufs, int nspec, int ufe, int nefc
+#endif
+                );
 
     void ApplyToInitialData ( amrex::Box const& bx, int ncomp,
                               amrex::Array4<amrex::Real                  > const& U_out,

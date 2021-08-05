@@ -21,7 +21,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                              Geometry const& lev_geom, Real dt, 
                              std::string redistribution_type
 #ifdef PELEC_USE_PLASMA
-                             , int ufs, int nspec, int ufe, int nefc,
+                             , int ufs, int nspec, int ufe, int nefc
 #endif
 )
 {

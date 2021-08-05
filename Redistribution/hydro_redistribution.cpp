@@ -19,7 +19,11 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                              Array4<Real const> const& ccc,
                              amrex::BCRec  const* d_bcrec_ptr,
                              Geometry const& lev_geom, Real dt, 
-                             std::string redistribution_type)
+                             std::string redistribution_type
+#ifdef PELEC_USE_PLASMA
+                             , int ufs, int nspec, int ufe, int nefc,
+#endif
+)
 {
     // redistribution_type = "NoRedist";      // no redistribution
     // redistribution_type = "FluxRedist"     // flux_redistribute
@@ -121,7 +125,9 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 // neighborhood of another cell -- if either of those is true the
                 // value may have changed
 
-                if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)
+                // if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.) && (n != ufs) )
+                // if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.) && (n < ufs || n >= ufs+nspec) )
+                if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)  )
                    dUdt_out(i,j,k,n) = (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
                 else
                    dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);

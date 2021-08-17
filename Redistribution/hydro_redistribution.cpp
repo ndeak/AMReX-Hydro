@@ -62,6 +62,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         // Total volume of all cells in my nbhd
         FArrayBox nbhd_vol_fab(bxg2,1);
 
+        // scaled dUdt_in values
+        FArrayBox dUdt_in_scaled_fab(bxg4,ncomp);
+
+        // scaled U_in values
+        FArrayBox U_in_scaled_fab(bxg4,ncomp);
+
         // Centroid of my nbhd
         FArrayBox cent_hat_fab  (bxg2,AMREX_SPACEDIM);
 
@@ -80,6 +86,16 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         Elixir eli_chf = cent_hat_fab.elixir();
         Array4<Real      > cent_hat       = cent_hat_fab.array();
         Array4<Real const> cent_hat_const = cent_hat_fab.const_array();
+
+#ifdef PELEC_USE_PLASMA
+        Elixir eli_duin = dUdt_in_scaled_fab.elixir();
+        Array4<Real      > dUdt_in_scaled       = dUdt_in_scaled_fab.array();
+        Array4<Real const> dUdt_in_scaled_const = dUdt_in_scaled_fab.const_array();
+
+        Elixir eli_uin = U_in_scaled_fab.elixir();
+        Array4<Real      > U_in_scaled       = U_in_scaled_fab.array();
+        Array4<Real const> U_in_scaled_const = U_in_scaled_fab.const_array();
+#endif
 
         Box domain_per_grown = lev_geom.Domain();
         AMREX_D_TERM(if (lev_geom.isPeriodic(0)) domain_per_grown.grow(0,1);,
@@ -101,7 +117,29 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         amrex::ParallelFor(Box(scratch), ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
+#ifdef PELEC_USE_PLASMA
+                dUdt_in_scaled(i,j,k,n) = dUdt_in(i,j,k,n);
+                if(n == ufs) dUdt_in_scaled(i,j,k,n) *= 1.0/9.10938356e-28;
+                if(n == ufs + 4) dUdt_in_scaled(i,j,k,n) *= 6.0221409e23/32.0;                
+                if(n == ufs + 5) dUdt_in_scaled(i,j,k,n) *= 6.0221409e23/28.0;                
+                if(n == ufs + 6) dUdt_in_scaled(i,j,k,n) *= 6.0221409e23/64.0;                
+                if(n == ufs + 7) dUdt_in_scaled(i,j,k,n) *= 6.0221409e23/56.0;                
+                if(n == ufs + 8) dUdt_in_scaled(i,j,k,n) *= 6.0221409e23/60.0;                
+                if(n == ufs + 9) dUdt_in_scaled(i,j,k,n) *= 6.0221409e23/32.0;                
+
+                U_in_scaled(i,j,k,n) = U_in(i,j,k,n);
+                if(n == ufs) U_in_scaled(i,j,k,n) *= 1.0/9.10938356e-28;
+                if(n == ufs + 4) U_in_scaled(i,j,k,n) *= 6.0221409e23/32.0;                
+                if(n == ufs + 5) U_in_scaled(i,j,k,n) *= 6.0221409e23/28.0;                
+                if(n == ufs + 6) U_in_scaled(i,j,k,n) *= 6.0221409e23/64.0;                
+                if(n == ufs + 7) U_in_scaled(i,j,k,n) *= 6.0221409e23/56.0;                
+                if(n == ufs + 8) U_in_scaled(i,j,k,n) *= 6.0221409e23/60.0;                
+                if(n == ufs + 9) U_in_scaled(i,j,k,n) *= 6.0221409e23/32.0;                
+
+                scratch(i,j,k,n) = U_in_scaled(i,j,k,n) + dt * dUdt_in_scaled(i,j,k,n);
+#else
                 scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
+#endif
             }
         );
 
@@ -127,10 +165,27 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
                 // if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.) && (n != ufs) )
                 // if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.) && (n < ufs || n >= ufs+nspec) )
+#ifdef PELEC_USE_PLASMA
+                if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)  )
+                   dUdt_out(i,j,k,n) = (dUdt_out(i,j,k,n) - U_in_scaled(i,j,k,n)) / dt;
+                else
+                   dUdt_out(i,j,k,n) = dUdt_in_scaled(i,j,k,n);
+#else
                 if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)  )
                    dUdt_out(i,j,k,n) = (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
                 else
                    dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
+#endif
+
+#ifdef PELEC_USE_PLASMA
+                if(n == ufs) dUdt_out(i,j,k,n) /= 1.0/9.10938356e-28;
+                if(n == ufs + 4) dUdt_out(i,j,k,n) /= 6.0221409e23/32.0;
+                if(n == ufs + 5) dUdt_out(i,j,k,n) /= 6.0221409e23/28.0;
+                if(n == ufs + 6) dUdt_out(i,j,k,n) /= 6.0221409e23/64.0;
+                if(n == ufs + 7) dUdt_out(i,j,k,n) /= 6.0221409e23/56.0;
+                if(n == ufs + 8) dUdt_out(i,j,k,n) /= 6.0221409e23/60.0;
+                if(n == ufs + 9) dUdt_out(i,j,k,n) /= 6.0221409e23/32.0;
+#endif
             }
         );
 

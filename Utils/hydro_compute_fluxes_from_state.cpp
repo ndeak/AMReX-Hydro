@@ -1,3 +1,7 @@
+/** \addtogroup Utilities
+ * @{
+ */
+
 #include <hydro_godunov.H>
 #include <hydro_mol.H>
 #include <hydro_utils.H>
@@ -46,7 +50,8 @@ HydroUtils::ComputeFluxesOnBoxFromState (
             if (flagfab.getType(bx) == FabType::covered)
                return;
 
-            bool regular = (flagfab.getType(amrex::grow(bx,2)) == FabType::regular);
+	    //FIXME? -- Godunov needs to check on grow 3, but MOL only needs 2
+            bool regular = (flagfab.getType(amrex::grow(bx,3)) == FabType::regular);
 
             if (!regular)
             {
@@ -134,3 +139,4 @@ HydroUtils::ComputeFluxesOnBoxFromState (
                                            AMREX_D_DECL(face_x,face_y,face_z),
                                            geom, ncomp, fluxes_are_area_weighted );
 }
+/** @}*/

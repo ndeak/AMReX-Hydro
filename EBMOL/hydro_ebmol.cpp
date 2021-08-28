@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebmol.cpp
+ * \addtogroup EBMOL
+ * @{
+ *
+ */
+
 #include <hydro_mol.H>
 #include <hydro_ebmol.H>
 #include <hydro_constants.H>
@@ -499,6 +506,22 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
     advc.FillBoundary(geom.periodicity());
 
+    MultiFab* sstate;
+    if (redistribution_type == "StateRedist")
+    {
+      // Create temporary holder for sync "state" passed in via aofs
+      // Do this so we're not overwriting the "state" as we go through the redistribution
+      // process.
+      sstate = new MultiFab(state.boxArray(),state.DistributionMap(),ncomp,state.nGrow(),
+			    MFInfo(),ebfactory);
+      MultiFab::Copy(*sstate,aofs,aofs_comp,0,ncomp,state.nGrow());
+    }
+    else
+    {
+      // Doesn't matter what we put here, sstate only gets used for StateRedist
+      sstate = &aofs;
+    }
+
     if (Gpu::notInLaunchRegion())  mfi_info.EnableTiling().SetDynamic(true);
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -551,9 +574,12 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 	    Array4<Real> divtmp_redist_arr = tmpfab.array(ncomp);
 
 	    // Redistribute
-
+	    //
+	    // For StateRedistribution, we use the Sync as the "state".
+	    // This may lead to oversmoothing.
+	    //
 	    Redistribution::Apply( bx, ncomp,  divtmp_redist_arr, advc.array(mfi),
-				   state.const_array(mfi, state_comp), scratch, flag,
+				   sstate->const_array(mfi, 0), scratch, flag,
 				   AMREX_D_DECL(apx,apy,apz), vfrac,
 				   AMREX_D_DECL(fcx,fcy,fcz), ccc, d_bcrec_ptr,
 				   geom, dt, redistribution_type );
@@ -580,3 +606,4 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 	}
     }
 }
+/** @} */

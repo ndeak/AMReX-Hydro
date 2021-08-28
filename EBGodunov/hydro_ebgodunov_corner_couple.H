@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebgodunov_corner_couple.H
+ * \addtogroup EBGodunov
+ * @{
+ *
+ */
+
 #ifndef EBGODUNOV_CORNER_COUPLE_H
 #define EBGODUNOV_CORNER_COUPLE_H
 
@@ -11,7 +18,7 @@
    the scalar advection routines for 3D Godunov. It also contains function declarations
    for controlling host functions.  */
 
-namespace {
+namespace EBGodunovCornerCouple{
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void EBGodunov_corner_couple_yx (amrex::Real& lo1, amrex::Real& hi1,
@@ -284,3 +291,4 @@ void EBGodunov_corner_couple_yz (amrex::Real& lo1, amrex::Real& hi1,
 }
 }
 #endif
+/** @} */

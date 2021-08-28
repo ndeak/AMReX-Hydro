@@ -1,5 +1,11 @@
+/**
+ * \file hydro_create_itracker_3d.cpp
+ * \addtogroup Redistribution
+ * @{
+ *
+ */
+
 #include <hydro_redistribution.H>
-#include <AMReX_EB_slopes_K.H>
 
 using namespace amrex;
 
@@ -11,7 +17,8 @@ Redistribution::MakeITracker ( Box const& bx,
                                Array4<Real const> const& apz,
                                Array4<Real const> const& vfrac,
                                Array4<int> const& itracker,
-                               Geometry const& lev_geom)
+                               Geometry const& lev_geom,
+                               Real target_volfrac)
 {
 #if 0
      bool debug_print = false;
@@ -66,7 +73,7 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::ParallelFor(bx_per_g4,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-       if (vfrac(i,j,k) > 0.0 && vfrac(i,j,k) < 0.5)
+       if (vfrac(i,j,k) > 0.0 && vfrac(i,j,k) < target_volfrac)
        {
            Real apnorm, apnorm_inv;
            const Real dapx = apx(i+1,j  ,k  ) - apx(i,j,k);
@@ -175,10 +182,11 @@ Redistribution::MakeITracker ( Box const& bx,
                                         ( (ioff == 0 && koff == 0) && (nx_eq_ny || ny_eq_nz) ) ||
                                         ( (ioff == 0 && joff == 0) && (nx_eq_nz || ny_eq_nz) ) );
 
-           // If the merged cell isn't large enough, or if we broke symmetry by the current merge, 
-           // we merge in one of the other directions.  Note that the direction of the next merge 
+           // If the merged cell isn't large enough, or if we broke symmetry by the current merge,
+           // we merge in one of the other directions.  Note that the direction of the next merge
            // is first set by a symmetry break, but if that isn't happening, we choose the next largest normal
-           if ( (sum_vol < 0.5) || just_broke_symmetry )
+
+           if ( (sum_vol < target_volfrac) || just_broke_symmetry )
            {
                // Original offset was in x-direction
                if (joff == 0 && koff == 0)
@@ -286,26 +294,35 @@ Redistribution::MakeITracker ( Box const& bx,
 
                sum_vol += vfrac(i+ioff,j+joff,k+koff);
 
-               // All nbors are currently in one of three planes
-               bool just_broke_symmetry = ( ( (koff == 0) && (nx_eq_nz || ny_eq_nz) ) ||
-                                            ( (joff == 0) && (nx_eq_ny || ny_eq_nz) ) ||
-                                            ( (ioff == 0) && (nx_eq_ny || nx_eq_nz) ) );
+#if 0
+               int ioff3 = imap[itracker(i,j,k,3)];
+               int joff3 = jmap[itracker(i,j,k,3)];
+               int koff3 = kmap[itracker(i,j,k,3)];
+               if (debug_print)
+                   amrex::Print() << "Cell " << IntVect(i,j,k) << " with volfrac " << vfrac(i,j,k) <<
+                                     " trying to ALSO merge with " << IntVect(i+ioff3,j+joff3,k+koff3) <<
+                                     " with volfrac " << vfrac(i+ioff3,j+joff3,k+koff3) << std::endl;
+#endif
 
-               // If with a nbhd of four cells we have still not reached vfrac > 0.5, we add another four
+               // All nbors are currently in one of three planes
+               just_broke_symmetry = ( ( (koff == 0) && (nx_eq_nz || ny_eq_nz) ) ||
+                                       ( (joff == 0) && (nx_eq_ny || ny_eq_nz) ) ||
+                                       ( (ioff == 0) && (nx_eq_ny || nx_eq_nz) ) );
+
+               // If with a nbhd of four cells we have still not reached vfrac > target_volfrac, we add another four
                //    cells to the nbhd to make a 2x2x2 block.  We use the direction of the remaining
                //    normal to know whether to go lo or hi in the new direction.
-               if (sum_vol < 0.5 || just_broke_symmetry)
+               if (sum_vol < target_volfrac || just_broke_symmetry)
                {
 #if 0
                    if (debug_print)
                        if (just_broke_symmetry)
                            amrex::Print() << "Expanding neighborhood of " << IntVect(i,j,k) <<
                                              " from 4 to 8 since we just broke symmetry with the last merge " << std::endl;
-                       else 
+                       else
                            amrex::Print() << "Expanding neighborhood of " << IntVect(i,j,k) <<
                                              " from 4 to 8 since sum_vol with 4 was only " << sum_vol << " " << std::endl;
 #endif
-
                    // All nbors are currently in the koff=0 plane
                    if (koff == 0)
                    {
@@ -383,22 +400,22 @@ Redistribution::MakeITracker ( Box const& bx,
                            itracker(i,j,k,4) = 2;
 
                            if (ioff > 0)
-                               itracker(i,j,k,5) =  23;
+                               itracker(i,j,k,5) =  3;
                            else
-                               itracker(i,j,k,5) =  22;
+                               itracker(i,j,k,5) =  1;
                            if (koff > 0)
-                               itracker(i,j,k,6) =  25;
-                           else
                                itracker(i,j,k,6) =  19;
+                           else
+                               itracker(i,j,k,6) =  10;
 
                            if (ioff > 0 && koff > 0) {
-                               itracker(i,j,k,7) = 26;
-                           } else if (ioff < 0 && koff > 0) {
-                               itracker(i,j,k,7) = 24;
-                           } else if (ioff > 0 && koff < 0) {
                                itracker(i,j,k,7) = 20;
+                           } else if (ioff < 0 && koff > 0) {
+                               itracker(i,j,k,7) = 18;
+                           } else if (ioff > 0 && koff < 0) {
+                               itracker(i,j,k,7) = 11;
                            } else {
-                               itracker(i,j,k,7) = 21;
+                               itracker(i,j,k,7) =  9;
                            }
                        }
                    } else if (ioff == 0) {
@@ -454,7 +471,16 @@ Redistribution::MakeITracker ( Box const& bx,
                    itracker(i,j,k,0) += 4;
                }
            }
+           if (sum_vol < target_volfrac)
+           {
+#if 0
+             amrex::Print() << "Couldnt merge with enough cells to raise volume at " <<
+                               IntVect(i,j,k) << " so stuck with sum_vol " << sum_vol << std::endl;
+#endif
+             amrex::Abort("Couldnt merge with enough cells to raise volume greater than target_volfrac");
+           }
        }
     });
 }
 #endif
+/** @} */

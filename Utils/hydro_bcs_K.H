@@ -1,3 +1,17 @@
+/**
+ * \file hydro_bcs_K.H
+ *
+ * This header file contains the inlined __host__ __device__ functions required for
+ * the boundary condition routines for Godunov and MOL. It also contains function declarations
+ * for controlling host functions.
+ *
+ */
+
+/** \addtogroup Utilities
+ * @{
+ */
+
+
 #ifndef HYDRO_BCS_K_H
 #define HYDRO_BCS_K_H
 
@@ -8,11 +22,24 @@
 #include <iomanip>
 #include <hydro_constants.H>
 
-/* This header file contains the inlined __host__ __device__ functions required for
-   the bc routines for Godunov and MOL. It also contains function declarations
-   for controlling host functions.  */
+/**
+ * \namespace HydroBC
+ *
+ */
+namespace HydroBC{
 
-namespace {
+/**
+ *
+ * <A ID="SetXEdgeBCs"></A>
+ *
+ * \brief Boundary condition effects
+ *
+ *
+ * For a detailed discussion see the AMReX-Hydro Guide
+ * <A HREF="https://amrex-codes.github.io/amrex/hydro_html/EBMOL.html#sec:slopes">
+ * section for EBMOL</A>.
+ *
+ */
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void SetXEdgeBCs( const int i, const int j, const int k, const int n,
@@ -22,6 +49,7 @@ void SetXEdgeBCs( const int i, const int j, const int k, const int n,
                   const int bchi, const int domhi,
                   const bool is_velocity )
 {
+
     using namespace amrex;
 
     if (i == domlo)
@@ -64,6 +92,14 @@ void SetXEdgeBCs( const int i, const int j, const int k, const int n,
         return;
 }
 
+/*
+ * \fn SetYEdgeBCs
+ */
+/**
+ * \brief Boundary condition effects
+ *
+ * For a detailed discussion see the AMReX-Hydro Guide section EBMOL.
+ */
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void SetYEdgeBCs ( const int i, const int j, const int k, const int n,
@@ -120,6 +156,15 @@ void SetYEdgeBCs ( const int i, const int j, const int k, const int n,
 //   =============================== 3D ONLY ===============================   //
 //                                                                             //
 #if (AMREX_SPACEDIM==3)
+
+/**
+ * 
+ * \brief Boundary condition effects
+ *
+ * For a detailed discussion see the AMReX-Hydro Guide.
+ * For 3D only.
+ */
+
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void SetZEdgeBCs ( const int i, const int j, const int k, const int n,
                    const amrex::Array4<const amrex::Real> &s,
@@ -172,3 +217,4 @@ void SetZEdgeBCs ( const int i, const int j, const int k, const int n,
 #endif
 } // namespace
 #endif
+/** @}*/

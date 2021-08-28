@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebgodunov.cpp
+ * \addtogroup EBGodunov
+ * @{
+ *
+ */
+
 #include <hydro_ebgodunov.H>
 #include <hydro_godunov.H>
 #include <hydro_redistribution.H>
@@ -88,9 +95,11 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
         const Box& bx   = mfi.tilebox();
 
         auto const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
-	// If cut cells are involved, slopes are 2nd order => we only need to
-	// need to check regular on grow(bx,2).
-        bool regular = (flagfab.getType(amrex::grow(bx,2)) == FabType::regular);
+	// A regular box uses 3 ghost cells:
+	// We predict the state on the edge based box; that calls slopes on
+	// i & i-1; slopes then looks at (i-1)-2 for 4th order slopes
+	// => test on bx grow 3
+        bool regular = (flagfab.getType(amrex::grow(bx,3)) == FabType::regular);
 
         // Get handlers to Array4
         //
@@ -402,7 +411,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
         const Box& bx   = mfi.tilebox();
 
         auto const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
-        bool regular = (flagfab.getType(amrex::grow(bx,2)) == FabType::regular);
+        bool regular = (flagfab.getType(amrex::grow(bx,3)) == FabType::regular);
 
         //
         // Get handlers to Array4
@@ -542,6 +551,22 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
 
     advc.FillBoundary(geom.periodicity());
 
+    MultiFab* sstate;
+    if (redistribution_type == "StateRedist")
+    {
+      // Create temporary holder for sync "state" passed in via aofs
+      // Do this so we're not overwriting the "state" as we go through the redistribution
+      // process.
+      sstate = new MultiFab(state.boxArray(),state.DistributionMap(),ncomp,state.nGrow(),
+			    MFInfo(),ebfact);
+      MultiFab::Copy(*sstate,aofs,aofs_comp,0,ncomp,state.nGrow());
+    }
+    else
+    {
+      // Doesn't matter what we put here, sstate only gets used for StateRedist
+      sstate = &aofs;
+    }
+
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -596,8 +621,13 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
             }
 	    Array4<Real> divtmp_redist_arr = tmpfab.array(ncomp);
 
+	    // Redistribute
+	    //
+	    // For StateRedistribution, we use the Sync as the "state".
+	    // This may lead to oversmoothing.
+	    //
             Redistribution::Apply( bx, ncomp, divtmp_redist_arr, advc_arr,
-                                   state.const_array(mfi, state_comp), scratch, flags_arr,
+                                   sstate->const_array(mfi, 0), scratch, flags_arr,
                                    AMREX_D_DECL(apx,apy,apz), vfrac_arr,
                                    AMREX_D_DECL(fcx,fcy,fcz), ccent_arr, d_bc,
                                    geom, dt, redistribution_type );
@@ -619,3 +649,4 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
 	}
     }
 }
+/** @} */

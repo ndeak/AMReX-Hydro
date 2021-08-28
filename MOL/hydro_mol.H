@@ -1,4 +1,3 @@
-
 /**
  * \file hydro_mol.H
  * \brief A documented file.
@@ -6,6 +5,14 @@
  * Here is where detailed documentation for the file can go. 
  *
  */
+
+/** \addtogroup MOL
+ *  @{
+ */
+
+
+
+
 
 #ifndef HYDRO_MOL_H_
 #define HYDRO_MOL_H_
@@ -62,13 +69,27 @@ void ComputeAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                    bool is_velocity);
 
 /**
+ *  <A ID="ComputeSyncAofs"></A> 
  *  
  *  \brief Example documentation
  *
  *  \param[in] aofs This is an `in` variable.
  *  \param[in,out] aofs_comp This is an `in,out` variable.
  *
- *  This is just some example documentation capabilities.
+ *  This is an example of the documentation capabilities.  
+ *
+ *  The html above 
+ *  creates an anchor that can be used to link directly to the documentation
+ *  for this function. Navigating to
+ *
+ *      https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html#ComputeSyncAofs
+ *
+ *  will bring you to the documentation for this function specifically.
+ *
+ *  The tag below allows for cross referencing of other functions in Doxygen.
+ *
+ *  \ref ExtrapVelToFaces
+ *
  *
  */
 
@@ -95,6 +116,12 @@ void ComputeSyncAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                        amrex::Geometry const& geom,
                        bool is_velocity);
 
+/**
+ *  \brief ComputeEdgeState description.
+ *  
+ *  
+ */
+
 void ComputeEdgeState (amrex::Box const& a_bx,
                        AMREX_D_DECL( amrex::Array4<amrex::Real> const& xedge,
                                      amrex::Array4<amrex::Real> const& yedge,
@@ -108,7 +135,6 @@ void ComputeEdgeState (amrex::Box const& a_bx,
                        amrex::Vector<amrex::BCRec> const& bcs,
                        amrex::BCRec  const* d_bcrec_ptr,
                        bool is_velocity);
-
 
 
 /** 
@@ -158,3 +184,4 @@ void ExtrapVelToFacesBox ( AMREX_D_DECL( amrex::Box const& ubx,
 
 } 
 #endif
+/** @}*/

@@ -39,8 +39,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
     // redistribution_type = "NewStateRedist"; // new form of state redistribute with alpha-weightings and 
                                                // alternative slope calculations
 
-    auto const& dx = lev_geom.CellSizeArray();
-
     amrex::ParallelFor(bx,ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {

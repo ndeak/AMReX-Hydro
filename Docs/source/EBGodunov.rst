@@ -7,7 +7,9 @@ use a least squares approach also described in `Slopes`_ .
 
 .. _`Slopes`: https://amrex-codes.github.io/amrex/hydro_html/Slopes.html
 
-We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
+We define :math:`\varepsilon = 1.e-8` in `hydro_constants.H`_
+
+.. _`hydro_constants.H`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/group__Utilities.html#ga57d5ce9bc3bca16e249c611342f3c550
 
 Notation
 --------
@@ -17,7 +19,7 @@ and :math:`V` is the volume fraction of the cell.  All area and volume fractions
 and less than or equal to 1.
 
 Pre-MAC (`ExtrapVelToFaces`_)
-----------------------------
+-----------------------------
 
 .. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#abea06da38cd7e2c6a6ed94d761c4e996
 
@@ -27,7 +29,7 @@ component from the centroids of the cells on either side to the face centroid, c
 and right (R) states. For face :math:`(i+1/2,j,k)` this gives
 
 .. math::
-   :label: eq1
+   :label: eq1-ebg
 
    \tilde{u}_{i+\frac{1}{2},j,k}^{L,{n+\frac{1}{2}}} & \approx u_{i,j,k}^n + \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
     & = u_{i,j,k}^n + \left( \frac{dx}{2} - u^n_{i,j,k} \frac{dt}{2} \right) (u_x^{n,lim})_{i,j,k} \\
@@ -36,7 +38,7 @@ and right (R) states. For face :math:`(i+1/2,j,k)` this gives
 extrapolated from :math:`(i,j,k)`, and
 
 .. math::
-   :label: eq2
+   :label: eq2-ebg
 
     \tilde{u}_{i+\frac{1}{2},j,k}^{R,{n+\frac{1}{2}}} & \approx u_{i+1,j,k}^n - \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
     & = u_{i+1,j,k}^n - \left( \frac{dx}{2} + u^n_{i+1,j,k} \frac{dt}{2} \right)(u^{n,lim}_x)_{i+1,j,k} \\
@@ -47,11 +49,11 @@ extrapolated from :math:`(i+1,j,k).` Here, :math:`f` is the sum of external forc
 In evaluating these terms the first derivatives normal to the face (in this
 case :math:`u_x^{n,lim}`) are evaluated using a monotonicity-limited fourth-order
 slope approximation for cells where the stencil would not include any cut or covered cells.
-The limiting is done on each component of the velocity at time :math:`n` individually. 
+The limiting is done on each component of the velocity at time :math:`n` individually.
 
 When one or more cells on either side is a cut cell, we instead use a least squares fit centered on :math:`(i,j,k)` that uses
-all regular and cut-cell neighbors, compute slopes in all three coordinate directions. 
-We then define the left and right states by extrapolating from the cell centroid to the 
+all regular and cut-cell neighbors, compute slopes in all three coordinate directions.
+We then define the left and right states by extrapolating from the cell centroid to the
 face centroid using slopes in all three coordinate directions as necessary.
 
 The transverse derivative terms (:math:`\widehat{v u_y}` and
@@ -104,7 +106,7 @@ We now upwind :math:`\widehat{\boldsymbol{U}}` based on :math:`\widehat{v}_{{i,j
 After constructing :math:`\widehat{\boldsymbol{U}}_{{i,j-\frac{1}{2},k}}, \widehat{\boldsymbol{U}}_{i,j,k+\frac{1}{2}}`
 and :math:`\widehat{\boldsymbol{U}}_{i,j,k-\frac{1}{2}}` in a similar manner,
 we use these upwind values to form the transverse derivatives in
-Eqs. :eq:`eq1` and :eq:`eq2` :
+Eqs. :eq:`eq1-ebg` and :eq:`eq2-ebg` :
 
 .. math::
     (\widehat{v u_y})_{i,j,k} = \frac{1}{2dy} ( \widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} +
@@ -150,8 +152,8 @@ adjacent to the domain boundary (see `Slopes`_).
 
 (2) Second, if the face is on a domain boundary and the boundary
 condition type is extdir, we set both :math:`u_L` and :math:`u_R` to the
-boundary value. If the boundary condition type is foextrap, hoextrap, or 
-reflecteven on the low side of the domain, 
+boundary value. If the boundary condition type is foextrap, hoextrap, or
+reflecteven on the low side of the domain,
 we set :math:`u_L = u_R.` (If on the high side then we
 set :math:`u_R = u_L.`) If the boundary condition type is reflectodd , we set
 :math:`u_L = u_R = 0.`
@@ -174,7 +176,7 @@ Once we have the MAC-projected velocities, we project all quantities to
 faces as above:
 
 .. math::
-   :label: eq3
+   :label: eq3-ebg
 
    \tilde{s}_{i+\frac{1}{2},j,k}^{L,{n+\frac{1}{2}}} & \approx s_{i,j,k}^n + \frac{dx}{2} s_x + \frac{dt}{2} s_t \\
     & = s_{i,j,k}^n + \left( \frac{dx}{2} - s^n_{i,j,k} \frac{dt}{2} \right) (s_x^{n,lim})_{i,j,k} \\
@@ -183,7 +185,7 @@ faces as above:
 extrapolated from :math:`(i,j,k)`, and
 
 .. math::
-   :label: eq4
+   :label: eq4-ebg
 
     \tilde{s}_{i+\frac{1}{2},j,k}^{R,{n+\frac{1}{2}}} & \approx s_{i+1,j,k}^n - \frac{dx}{2} s_x + \frac{dt}{2} s_t \\
     & = s_{i+1,j,k}^n - \left( \frac{dx}{2} + s^n_{i+1,j,k} \frac{dt}{2} \right)(s^{n,lim}_x)_{i+1,j,k} \\
@@ -208,12 +210,37 @@ At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 
 .. math::
 
-   s_{i-\frac{1}{2},j,k}^{{n+\frac{1}{2}}} = 
+   s_{i-\frac{1}{2},j,k}^{{n+\frac{1}{2}}} =
    \begin{cases}
    s_L, & \mathrm{if} \; u^{MAC}_{i-\frac{1}{2},j,k}\; \ge  \; \varepsilon  \; \mathrm{else} \\
    s_R, & \mathrm{if} \; u^{MAC}_{i-\frac{1}{2},j,k}\; \le  \; -\varepsilon  \; \mathrm{else} \\
-   \frac{1}{2}(s_L + s_R), 
+   \frac{1}{2}(s_L + s_R),
    \end{cases}
+
+Computing the Fluxes (`ComputeFluxes`_)
+---------------------------------------
+
+.. _`ComputeFluxes`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroUtils.html#ab70f040557a658e70ba076c9d105bab7
+
+The fluxes are computed from the edge states above by defining, e.g.,
+
+.. math::
+
+   F_{i-\frac{1}{2},j,k}^{x,n+\frac{1}{2}} = a_{i-\frac{1}{2},j,k} \; u^{MAC}_{i-\frac{1}{2},j,k} \; s_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}}
+
+on all x-faces with non-zero area fraction,
+
+.. math::
+
+   F_{i,j-\frac{1}{2},k}^{y,n+\frac{1}{2}} = a_{i,j-\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k} \; s_{i,j-\frac{1}{2},k}^{n+\frac{1}{2}}
+
+on all y-faces with non-zero area fraction, and
+
+.. math::
+
+   F_{i,j,k-\frac{1}{2}}^{z,n+\frac{1}{2}} = a_{i,j,k-\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{n+\frac{1}{2}}
+
+on all z-face with non-zero area fraction.
 
 Constructing the update
 -----------------------
@@ -222,19 +249,16 @@ If the variable, :math:`s` is to be updated conservatively, on all cells with :m
 
 .. math::
 
-   \nabla \cdot ({\bf u}s) = ( 
-                           & (a_{i+\frac{1}{2},j,k} \; u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k}^{{n+\frac{1}{2}}} 
-                             - a_{i-\frac{1}{2},j,k} \; u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}^{{n+\frac{1}{2}}}) + \\
-                           & (a_{i,j+\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k}^{{n+\frac{1}{2}}} 
-                            - a_{i,j-\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k}^{{n+\frac{1}{2}}}) + \\
-                           & (a_{i,j,k+\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}}^{{n+\frac{1}{2}}} 
-                            - a_{i,j,k-\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}}) ) / V_{i,j,k}
+   \nabla \cdot ({\bf u}s)^{n+\frac{1}{2}} = (
+                           & ( F_{i+\frac{1}{2},j,k}^{{x,n+\frac{1}{2}}} -F_{i-\frac{1}{2},j,k}^{{x,n+\frac{1}{2}}}) + \\
+                           & ( F_{i,j+\frac{1}{2},k}^{{y,n+\frac{1}{2}}} -F_{i,j-\frac{1}{2},k}^{{y,n+\frac{1}{2}}}) + \\
+                           & ( F_{i,j,k+\frac{1}{2}}^{{z,n+\frac{1}{2}}} -F_{i,j,k-\frac{1}{2}}^{{z,n+\frac{1}{2}}}) ) / V_{i,j,k}
 
 while if :math:`s` is to be updated in convective form, we construct
 
 .. math::
 
-   ({\bf u}\cdot \nabla s) = \nabla \cdot ({\bf u}s) - s_{i,j,k}^{{n+\frac{1}{2}}} (DU)^{MAC}
+   ({\bf u}\cdot \nabla s)^{n+\frac{1}{2}} = \nabla \cdot ({\bf u}s)^{n+\frac{1}{2}} - s_{i,j,k}^{{n+\frac{1}{2}}} (DU)^{MAC}
 
 where
 
@@ -242,21 +266,22 @@ where
 
    (DU)^{MAC}  = ( & (a_{i+\frac{1}{2},j,k} u^{MAC}_{i+\frac{1}{2},j,k}- a_{i-\frac{1}{2},j,k} u^{MAC}_{i-\frac{1}{2},j,k}) + \\
                    & (a_{i,j+\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}- a_{i,j-\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}) + \\
-                   & (a_{i,j,k+\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}- a_{i,j,k-\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}) ) / V_{i,j,k} 
+                   & (a_{i,j,k+\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}- a_{i,j,k-\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}) ) / V_{i,j,k}
 
 and
 
 .. math::
 
-   s_{i,j,k}^{{n+\frac{1}{2}}} = (1/6) ( 
+   s_{i,j,k}^{{n+\frac{1}{2}}} = (1/6) (
                     s_{i-\frac{1}{2},j,k}^{{n+\frac{1}{2}}} + s_{i+\frac{1}{2},j,k}^{{n+\frac{1}{2}}}
                 +   s_{i,j-\frac{1}{2},k}^{{n+\frac{1}{2}}} + s_{i,j-\frac{1}{2},k}^{{n+\frac{1}{2}}}
                 +   s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} + s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} )
+
 |
 |
 |
 
-These alogrithms are applied in the EBGodunov namespace. For API documentation, see 
+These alogrithms are applied in the EBGodunov namespace. For API documentation, see
 `Doxygen: EBGodunov Namespace`_.
 
 .. _`Doxygen: EBGodunov Namespace`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html

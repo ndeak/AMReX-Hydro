@@ -192,7 +192,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 // if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.) && (n != ufs) )
                 // if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.) && (n < ufs || n >= ufs+nspec) )
 #ifdef PELEC_USE_PLASMA
-                if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)  )
+                if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.) && (n != ufe-2) && (n != ufe-1) )   // Hard-coding in no redist for phiV, as it causes issues in coupled system...
                    dUdt_out(i,j,k,n) = (dUdt_out(i,j,k,n) - U_in_scaled(i,j,k,n)) / dt;
                 else
                    dUdt_out(i,j,k,n) = dUdt_in_scaled(i,j,k,n);

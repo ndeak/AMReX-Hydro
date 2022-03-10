@@ -28,7 +28,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                              Geometry const& lev_geom, Real dt, 
                              std::string redistribution_type
 #ifdef PELEC_USE_PLASMA
-                             , int ufs, int nspec, int ufe, int nefc
+                             , int ufs, int nspec, int ufe, int nefc, Real *mwts
 #endif
                              , amrex::Real target_volfrac
 )
@@ -37,7 +37,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
     // redistribution_type = "FluxRedist"      // flux_redistribute
     // redistribution_type = "StateRedist";    // state redistribute
     // redistribution_type = "NewStateRedist"; // new form of state redistribute with alpha-weightings and 
-                                               // alternative slope calculations
 
     amrex::ParallelFor(bx,ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -134,22 +133,10 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             {
 #ifdef PELEC_USE_PLASMA
                 dUdt_in_scaled(i,j,k,n) = dUdt_in(i,j,k,n);
-                if(n == ufs) dUdt_in_scaled(i,j,k,n) *= 1.0/9.10938356e-28;
-                if(n == ufs + 4) dUdt_in_scaled(i,j,k,n) *= 6.0221409e23/32.0;                
-                if(n == ufs + 5) dUdt_in_scaled(i,j,k,n) *= 6.0221409e23/28.0;                
-                if(n == ufs + 6) dUdt_in_scaled(i,j,k,n) *= 6.0221409e23/64.0;                
-                if(n == ufs + 7) dUdt_in_scaled(i,j,k,n) *= 6.0221409e23/56.0;                
-                if(n == ufs + 8) dUdt_in_scaled(i,j,k,n) *= 6.0221409e23/60.0;                
-                if(n == ufs + 9) dUdt_in_scaled(i,j,k,n) *= 6.0221409e23/32.0;                
+                if(n >= ufs && n < ufs + nspec ) dUdt_in_scaled(i,j,k,n) *= 6.0221409e23/mwts[n - ufs];
 
                 U_in_scaled(i,j,k,n) = U_in(i,j,k,n);
-                if(n == ufs) U_in_scaled(i,j,k,n) *= 1.0/9.10938356e-28;
-                if(n == ufs + 4) U_in_scaled(i,j,k,n) *= 6.0221409e23/32.0;                
-                if(n == ufs + 5) U_in_scaled(i,j,k,n) *= 6.0221409e23/28.0;                
-                if(n == ufs + 6) U_in_scaled(i,j,k,n) *= 6.0221409e23/64.0;                
-                if(n == ufs + 7) U_in_scaled(i,j,k,n) *= 6.0221409e23/56.0;                
-                if(n == ufs + 8) U_in_scaled(i,j,k,n) *= 6.0221409e23/60.0;                
-                if(n == ufs + 9) U_in_scaled(i,j,k,n) *= 6.0221409e23/32.0;                
+                if(n >= ufs && n < ufs + nspec ) U_in_scaled(i,j,k,n) *= 6.0221409e23/mwts[n - ufs];
 
                 scratch(i,j,k,n) = U_in_scaled(i,j,k,n) + dt * dUdt_in_scaled(i,j,k,n);
 #else
@@ -197,13 +184,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 else
                    dUdt_out(i,j,k,n) = dUdt_in_scaled(i,j,k,n);
 
-                if(n == ufs) dUdt_out(i,j,k,n) /= 1.0/9.10938356e-28;
-                if(n == ufs + 4) dUdt_out(i,j,k,n) /= 6.0221409e23/32.0;
-                if(n == ufs + 5) dUdt_out(i,j,k,n) /= 6.0221409e23/28.0;
-                if(n == ufs + 6) dUdt_out(i,j,k,n) /= 6.0221409e23/64.0;
-                if(n == ufs + 7) dUdt_out(i,j,k,n) /= 6.0221409e23/56.0;
-                if(n == ufs + 8) dUdt_out(i,j,k,n) /= 6.0221409e23/60.0;
-                if(n == ufs + 9) dUdt_out(i,j,k,n) /= 6.0221409e23/32.0;
+                if(n >= ufs && n < ufs + nspec ) dUdt_out(i,j,k,n) /= 6.0221409e23/mwts[n - ufs];
 #else
                 if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)  )
                    dUdt_out(i,j,k,n) = (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;

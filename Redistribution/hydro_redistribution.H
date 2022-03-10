@@ -36,7 +36,7 @@ namespace Redistribution {
                  amrex::Geometry const& geom, 
                  amrex::Real dt, std::string redistribution_type
 #ifdef PELEC_USE_PLASMA
-                ,int ufs, int nspec, int ufe, int nefc
+                ,int ufs, int nspec, int ufe, int nefc, amrex::Real *mwts
 #endif
                 ,amrex::Real target_volfrac = 0.5
                 );

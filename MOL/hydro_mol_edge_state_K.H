@@ -4,10 +4,11 @@
 
 #ifndef HYDRO_MOL_EDGE_STATE_K_H_
 #define HYDRO_MOL_EDGE_STATE_K_H_
-
 #include <hydro_slopes_K.H>
 #include <hydro_bcs_K.H>
 #include <hydro_constants.H>
+
+using namespace amrex::literals;
 
 namespace MOL {
 
@@ -40,20 +41,20 @@ amrex::Real hydro_mol_xedge_state_extdir ( int i, int j, int k, int n,
     else
     {
         amrex::Real qpls = q(i  ,j,k,n) - 0.5 *
-	  amrex_calc_xslope_extdir( i  , j, k, n, order, q, extdir_or_ho_lo, extdir_or_ho_hi, domlo, domhi );
+      amrex_calc_xslope_extdir( i  , j, k, n, order, q, extdir_or_ho_lo, extdir_or_ho_hi, domlo, domhi );
         amrex::Real qmns = q(i-1,j,k,n) + 0.5 *
-	  amrex_calc_xslope_extdir( i-1, j, k, n, order, q, extdir_or_ho_lo, extdir_or_ho_hi, domlo, domhi );
+      amrex_calc_xslope_extdir( i-1, j, k, n, order, q, extdir_or_ho_lo, extdir_or_ho_hi, domlo, domhi );
 
         HydroBC::SetXEdgeBCs(i,j,k,n,q,qmns,qpls,d_bcrec[n].lo(0),domlo,d_bcrec[n].hi(0),domhi,is_velocity);
 
         if ( (i==domlo) && (d_bcrec[n].lo(0) == amrex::BCType::foextrap || d_bcrec[n].lo(0) == amrex::BCType::hoextrap) )
         {
-            if ( umac(i,j,k) >= 0. && n==XVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+            if ( umac(i,j,k) >= 0. && n==XVEL && is_velocity )  qpls = amrex::min(qpls,0.0_rt);
             qmns = qpls;
         }
         if ( (i==domhi+1) && (d_bcrec[n].hi(0) == amrex::BCType::foextrap || d_bcrec[n].hi(0) == amrex::BCType::hoextrap) )
         {
-            if ( umac(i,j,k) <= 0. && n==XVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+            if ( umac(i,j,k) <= 0. && n==XVEL && is_velocity ) qmns = amrex::max(qmns,0.0_rt);
             qpls = qmns;
         }
 
@@ -92,12 +93,12 @@ amrex::Real hydro_mol_xedge_state ( int i, int j, int k, int n,
 
     if ( (i==domlo) && (d_bcrec[n].lo(0) == amrex::BCType::foextrap || d_bcrec[n].lo(0) == amrex::BCType::hoextrap) )
     {
-        if ( umac(i,j,k) >= 0. && n==XVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+        if ( umac(i,j,k) >= 0. && n==XVEL && is_velocity )  qpls = amrex::min(qpls,0.0_rt);
         qmns = qpls;
     }
     if ( (i==domhi+1) && (d_bcrec[n].hi(0) == amrex::BCType::foextrap || d_bcrec[n].hi(0) == amrex::BCType::hoextrap) )
     {
-        if ( umac(i,j,k) <= 0. && n==XVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+        if ( umac(i,j,k) <= 0. && n==XVEL && is_velocity ) qmns = amrex::max(qmns,0.0_rt);
          qpls = qmns;
     }
 
@@ -147,20 +148,20 @@ amrex::Real hydro_mol_yedge_state_extdir ( int i, int j, int k, int n,
     else
     {
         amrex::Real qpls = q(i,j  ,k,n) - 0.5 *
-	  amrex_calc_yslope_extdir( i, j  , k, n, order, q, extdir_or_ho_lo, extdir_or_ho_hi, domlo, domhi );
+      amrex_calc_yslope_extdir( i, j  , k, n, order, q, extdir_or_ho_lo, extdir_or_ho_hi, domlo, domhi );
         amrex::Real qmns = q(i,j-1,k,n) + 0.5 *
-	  amrex_calc_yslope_extdir( i, j-1, k, n, order, q, extdir_or_ho_lo, extdir_or_ho_hi, domlo, domhi );
+      amrex_calc_yslope_extdir( i, j-1, k, n, order, q, extdir_or_ho_lo, extdir_or_ho_hi, domlo, domhi );
 
         HydroBC::SetYEdgeBCs(i,j,k,n,q,qmns,qpls,d_bcrec[n].lo(1),domlo,d_bcrec[n].hi(1),domhi,is_velocity);
 
         if ( (j==domlo) && (d_bcrec[n].lo(1) == amrex::BCType::foextrap || d_bcrec[n].lo(1) == amrex::BCType::hoextrap) )
         {
-            if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+            if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity )  qpls = amrex::min(qpls,0.0_rt);
             qmns = qpls;
         }
         if ( (j==domhi+1) && (d_bcrec[n].hi(1) == amrex::BCType::foextrap || d_bcrec[n].hi(1) == amrex::BCType::hoextrap) )
         {
-            if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+            if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) qmns = amrex::max(qmns,0.0_rt);
              qpls = qmns;
         }
 
@@ -201,12 +202,12 @@ amrex::Real hydro_mol_yedge_state ( int i, int j, int k, int n,
 
     if ( (j==domlo) && (d_bcrec[n].lo(1) == amrex::BCType::foextrap || d_bcrec[n].lo(1) == amrex::BCType::hoextrap) )
     {
-        if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+        if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity )  qpls = amrex::min(qpls,0.0_rt);
         qmns = qpls;
     }
     if ( (j==domhi+1) && (d_bcrec[n].hi(1) == amrex::BCType::foextrap || d_bcrec[n].hi(1) == amrex::BCType::hoextrap) )
     {
-        if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+        if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) qmns = amrex::max(qmns,0.0_rt);
          qpls = qmns;
     }
 
@@ -258,20 +259,20 @@ amrex::Real hydro_mol_zedge_state_extdir ( int i, int j, int k, int n,
     else
     {
         amrex::Real qpls = q(i,j,k  ,n) - 0.5 *
-	  amrex_calc_zslope_extdir( i, j, k  , n, order, q, extdir_or_ho_lo, extdir_or_ho_hi, domlo, domhi );
+      amrex_calc_zslope_extdir( i, j, k  , n, order, q, extdir_or_ho_lo, extdir_or_ho_hi, domlo, domhi );
         amrex::Real qmns = q(i,j,k-1,n) + 0.5 *
-	  amrex_calc_zslope_extdir( i, j, k-1, n, order, q, extdir_or_ho_lo, extdir_or_ho_hi, domlo, domhi );
+      amrex_calc_zslope_extdir( i, j, k-1, n, order, q, extdir_or_ho_lo, extdir_or_ho_hi, domlo, domhi );
 
         HydroBC::SetZEdgeBCs(i,j,k,n,q,qmns,qpls,d_bcrec[n].lo(2),domlo,d_bcrec[n].hi(2),domhi,is_velocity);
 
         if ( (k==domlo) && (d_bcrec[n].lo(2) == amrex::BCType::foextrap || d_bcrec[n].lo(2) == amrex::BCType::hoextrap) )
         {
-            if ( wmac(i,j,k) >= 0. && n==ZVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+            if ( wmac(i,j,k) >= 0. && n==ZVEL && is_velocity )  qpls = amrex::min(qpls,0.0_rt);
             qmns = qpls;
         }
         if ( (k==domhi+1) && (d_bcrec[n].hi(2) == amrex::BCType::foextrap || d_bcrec[n].hi(2) == amrex::BCType::hoextrap) )
         {
-            if ( wmac(i,j,k) <= 0. && n==ZVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+            if ( wmac(i,j,k) <= 0. && n==ZVEL && is_velocity ) qmns = amrex::max(qmns,0.0_rt);
              qpls = qmns;
         }
 
@@ -312,12 +313,12 @@ amrex::Real hydro_mol_zedge_state ( int i, int j, int k, int n,
 
     if ( (k==domlo) && (d_bcrec[n].lo(2) == amrex::BCType::foextrap || d_bcrec[n].lo(2) == amrex::BCType::hoextrap) )
     {
-        if ( wmac(i,j,k) >= 0. && n==ZVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+        if ( wmac(i,j,k) >= 0. && n==ZVEL && is_velocity )  qpls = amrex::min(qpls,0.0_rt);
         qmns = qpls;
     }
     if ( (k==domhi+1) && (d_bcrec[n].hi(2) == amrex::BCType::foextrap || d_bcrec[n].hi(2) == amrex::BCType::hoextrap) )
     {
-        if ( wmac(i,j,k) <= 0. && n==ZVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+        if ( wmac(i,j,k) <= 0. && n==ZVEL && is_velocity ) qmns = amrex::max(qmns,0.0_rt);
          qpls = qmns;
     }
 

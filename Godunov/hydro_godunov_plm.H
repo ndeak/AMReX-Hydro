@@ -61,9 +61,9 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
 {
     using namespace amrex;
     {
-        bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) or
+        bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
                                 (bc.lo(0) == BCType::hoextrap);
-        bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) or
+        bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||
                                 (bc.hi(0) == BCType::hoextrap);
 
         Real upls, umns;
@@ -101,9 +101,9 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
         }
         else
         {
-	    // Note that we still call the "extdir version" here because interior cells one
-	    // away from the boundary will still see the boundary condition in the 4th order
-	    // slope
+        // Note that we still call the "extdir version" here because interior cells one
+        // away from the boundary will still see the boundary condition in the 4th order
+        // slope
             upls = S(i  ,j,k,n) + 0.5 * (-1.0 - umac * dt/dx) *
                 amrex_calc_xslope_extdir(i  ,j,k,n,order,S, extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi);
             umns = S(i-1,j,k,n) + 0.5 * ( 1.0 - umac * dt/dx) *
@@ -128,9 +128,9 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
 {
     using namespace amrex;
     {
-        bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) or
+        bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) ||
                                 (bc.lo(1) == BCType::hoextrap);
-        bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) or
+        bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) ||
                                 (bc.hi(1) == BCType::hoextrap);
 
         Real vpls, vmns;
@@ -165,9 +165,9 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
         }
         else
         {
-	    // Note that we still call the "extdir version" here because interior cells one
-	    // away from the boundary will still see the boundary condition in the 4th order
-	    // slope
+        // Note that we still call the "extdir version" here because interior cells one
+        // away from the boundary will still see the boundary condition in the 4th order
+        // slope
             vpls = S(i,j  ,k,n) + 0.5 * (-1.0 - vmac * dt/dy) *
                 amrex_calc_yslope_extdir(i,j  ,k,n,order,S, extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi);
             vmns = S(i,j-1,k,n) + 0.5 * ( 1.0 - vmac * dt/dy) *
@@ -193,9 +193,9 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
 {
     using namespace amrex;
     {
-        bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) or
+        bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) ||
                                 (bc.lo(2) == BCType::hoextrap);
-        bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) or
+        bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) ||
                                 (bc.hi(2) == BCType::hoextrap);
 
         Real wpls, wmns;
@@ -230,9 +230,9 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
         }
         else
         {
-	    // Note that we still call the "extdir version" here because interior cells one
-	    // away from the boundary will still see the boundary condition in the 4th order
-	    // slope
+        // Note that we still call the "extdir version" here because interior cells one
+        // away from the boundary will still see the boundary condition in the 4th order
+        // slope
             wpls = S(i,j,k  ,n) + 0.5 * (-1.0 - wmac * dt/dz) *
                 amrex_calc_zslope_extdir(i,j,k  ,n,order,S, extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
             wmns = S(i,j,k-1,n) + 0.5 * ( 1.0 - wmac * dt/dz) *

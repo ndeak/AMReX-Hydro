@@ -28,15 +28,17 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                              Geometry const& lev_geom, Real dt, 
                              std::string redistribution_type
 #ifdef PELEC_USE_PLASMA
-                             , int ufs, int nspec, int ufe, int nefc, Real *mwts
+                             , 
+                             int ufs, int nspec, int ufe, int nefc, Real *mwts
 #endif
-                             , amrex::Real target_volfrac
-)
+                             , 
+                             const int srd_max_order,
+                             amrex::Real target_volfrac,
+                             Array4<Real const> const& srd_update_scale)
 {
     // redistribution_type = "NoRedist";       // no redistribution
     // redistribution_type = "FluxRedist"      // flux_redistribute
-    // redistribution_type = "StateRedist";    // state redistribute
-    // redistribution_type = "NewStateRedist"; // new form of state redistribute with alpha-weightings and 
+    // redistribution_type = "StateRedist";    // (weighted) state redistribute
 
     amrex::ParallelFor(bx,ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -49,7 +51,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         int icomp = 0;
         apply_flux_redistribution (bx, dUdt_out, dUdt_in, scratch, icomp, ncomp, flag, vfrac, lev_geom);
 
-    } else if (redistribution_type == "StateRedist" or redistribution_type == "NewStateRedist") {
+    } else if (redistribution_type == "StateRedist") {
 
         Box const& bxg1 = grow(bx,1);
         Box const& bxg2 = grow(bx,2);
@@ -59,18 +61,18 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 #if (AMREX_SPACEDIM == 2)
         // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
         //    use the first component of this for the number of neighbors
-        IArrayBox itracker(bxg4,4);
+        IArrayBox itracker(bxg4,4,The_Async_Arena());
         // How many nbhds is a cell in
 #else
         // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
         //    use the first component of this for the number of neighbors
-        IArrayBox itracker(bxg4,8);
+        IArrayBox itracker(bxg4,8,The_Async_Arena());
 #endif
-        FArrayBox nrs_fab(bxg3,1);
-        FArrayBox alpha_fab(bxg3,2);
+        FArrayBox nrs_fab(bxg3,1,The_Async_Arena());
+        FArrayBox alpha_fab(bxg3,2,The_Async_Arena());
 
         // Total volume of all cells in my nbhd
-        FArrayBox nbhd_vol_fab(bxg2,1);
+        FArrayBox nbhd_vol_fab(bxg2,1,The_Async_Arena());
 
         // scaled dUdt_in values
         FArrayBox dUdt_in_scaled_fab(bxg4,ncomp);
@@ -79,25 +81,20 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         FArrayBox U_in_scaled_fab(bxg4,ncomp);
 
         // Centroid of my nbhd
-        FArrayBox cent_hat_fab     (bxg3,AMREX_SPACEDIM);
+        FArrayBox cent_hat_fab(bxg3,AMREX_SPACEDIM,The_Async_Arena());
 
-        Elixir eli_itr = itracker.elixir();
         Array4<int> itr = itracker.array();
         Array4<int const> itr_const = itracker.const_array();
 
-        Elixir eli_nrs = nrs_fab.elixir();
         Array4<Real      > nrs       = nrs_fab.array();
         Array4<Real const> nrs_const = nrs_fab.const_array();
 
-        Elixir eli_alpha = alpha_fab.elixir();
         Array4<Real      > alpha       = alpha_fab.array();
         Array4<Real const> alpha_const = alpha_fab.const_array();
 
-        Elixir eli_nbf = nbhd_vol_fab.elixir();
         Array4<Real      > nbhd_vol       = nbhd_vol_fab.array();
         Array4<Real const> nbhd_vol_const = nbhd_vol_fab.const_array();
 
-        Elixir eli_chf = cent_hat_fab.elixir();
         Array4<Real      > cent_hat       = cent_hat_fab.array();
         Array4<Real const> cent_hat_const = cent_hat_fab.const_array();
 
@@ -140,29 +137,21 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
                 scratch(i,j,k,n) = U_in_scaled(i,j,k,n) + dt * dUdt_in_scaled(i,j,k,n);
 #else
-                scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
+                const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
+                scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n) / scale;
 #endif
             }
         );
 
         MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, target_volfrac);
 
-        if (redistribution_type == "StateRedist")
-        {
-            MakeStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, nbhd_vol, cent_hat, lev_geom);
+        MakeStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
+                             lev_geom, target_volfrac);
 
-            StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac,
-                              AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
-                              itr_const, nrs_const, nbhd_vol_const, cent_hat_const, lev_geom);
-        } else {
-
-            MakeNewStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, alpha, nbhd_vol, cent_hat, 
-                                    lev_geom, target_volfrac);
-
-            NewStateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac,
-                                 AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
-                                 itr_const, nrs_const, alpha_const, nbhd_vol_const, cent_hat_const, lev_geom);
-        }
+        StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac,
+                          AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
+                          itr_const, nrs_const, alpha_const, nbhd_vol_const,
+                          cent_hat_const, lev_geom, srd_max_order);
 
         amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -176,11 +165,9 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 // neighborhood of another cell -- if either of those is true the
                 // value may have changed
 
-                // if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.) && (n != ufs) )
-                // if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.) && (n < ufs || n >= ufs+nspec) )
 #ifdef PELEC_USE_PLASMA
-                // if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.) && (n != ufe-2) && (n != ufe-1) )   // Hard-coding in no redist for phiV, as it causes issues in coupled system...
-                if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.) && (n != ufe-2) && (n != ufe-1))   // Hard-coding in no redist for phiV, as it causes issues in coupled system...
+                // if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)  )
+                if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.) && ((n < ufe-2) || (n > ufe+2)) )   // No redistribution for aux vars
                    dUdt_out(i,j,k,n) = (dUdt_out(i,j,k,n) - U_in_scaled(i,j,k,n)) / dt;
                 else
                    dUdt_out(i,j,k,n) = dUdt_in_scaled(i,j,k,n);
@@ -188,7 +175,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 if(n >= ufs && n < ufs + nspec ) dUdt_out(i,j,k,n) /= 6.0221409e23/mwts[n - ufs];
 #else
                 if ((itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)  )
-                   dUdt_out(i,j,k,n) = (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
+                   const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
+                   dUdt_out(i,j,k,n) = scale * (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
                 else
                    dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
 #endif
@@ -223,8 +211,14 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                                      amrex::Array4<amrex::Real const> const& ccc,
                                      amrex::BCRec  const* d_bcrec_ptr,
                                      Geometry& lev_geom, std::string redistribution_type,
+                                     const int srd_max_order,
                                      amrex::Real target_volfrac)
 {
+    if (redistribution_type != "StateRedist") {
+    std::string msg = "Redistribution::ApplyToInitialData: Shouldn't be here with redist type "+redistribution_type;
+        amrex::Error(msg);
+    }
+
     Box const& bxg2 = grow(bx,2);
     Box const& bxg3 = grow(bx,3);
     Box const& bxg4 = grow(bx,4);
@@ -232,38 +226,33 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(bxg4,4);
+    IArrayBox itracker(bxg4,4,The_Async_Arena());
 #else
     // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(bxg4,8);
+    IArrayBox itracker(bxg4,8,The_Async_Arena());
 #endif
-    FArrayBox nrs_fab(bxg3,1);
-    FArrayBox alpha_fab(bxg3,2);
+    FArrayBox nrs_fab(bxg3,1,The_Async_Arena());
+    FArrayBox alpha_fab(bxg3,2,The_Async_Arena());
 
     // Total volume of all cells in my nbhd
-    FArrayBox nbhd_vol_fab(bxg2,1);
+    FArrayBox nbhd_vol_fab(bxg2,1,The_Async_Arena());
 
     // Centroid of my nbhd
-    FArrayBox cent_hat_fab  (bxg3,AMREX_SPACEDIM);
+    FArrayBox cent_hat_fab(bxg3,AMREX_SPACEDIM,The_Async_Arena());
 
-    Elixir eli_itr = itracker.elixir();
     Array4<int> itr = itracker.array();
     Array4<int const> itr_const = itracker.const_array();
 
-    Elixir eli_nrs = nrs_fab.elixir();
     Array4<Real      > nrs       = nrs_fab.array();
     Array4<Real const> nrs_const = nrs_fab.const_array();
 
-    Elixir eli_alpha = alpha_fab.elixir();
     Array4<Real      > alpha       = alpha_fab.array();
     Array4<Real const> alpha_const = alpha_fab.const_array();
 
-    Elixir eli_nbf = nbhd_vol_fab.elixir();
     Array4<Real      > nbhd_vol       = nbhd_vol_fab.array();
     Array4<Real const> nbhd_vol_const = nbhd_vol_fab.const_array();
 
-    Elixir eli_chf = cent_hat_fab.elixir();
     Array4<Real      > cent_hat       = cent_hat_fab.array();
     Array4<Real const> cent_hat_const = cent_hat_fab.const_array();
 
@@ -273,30 +262,14 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
         U_out(i,j,k,n) = 0.;
     });
 
-    if (redistribution_type == "StateRedist" || redistribution_type == "NewStateRedist") {
+    MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, target_volfrac);
 
-        MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, target_volfrac);
+    MakeStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
+                            lev_geom, target_volfrac);
 
-        if (redistribution_type == "StateRedist")
-        {
-            MakeStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, nbhd_vol, cent_hat, lev_geom);
-
-            StateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac,
-                              AMREX_D_DECL(fcx, fcy, fcz), ccc, d_bcrec_ptr,
-                              itr_const, nrs_const, nbhd_vol_const, cent_hat_const, lev_geom);
-        } else {
-
-            MakeNewStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, alpha, nbhd_vol, cent_hat, 
-                                    lev_geom, target_volfrac);
-
-            NewStateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac,
-                                 AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
-                                 itr_const, nrs_const, alpha_const, nbhd_vol_const, cent_hat_const, lev_geom);
-        }
-
-
-    } else {
-        amrex::Error("Redistribution::ApplyToInitialData: Shouldn't be here with this redist type");
-    }
+    StateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac,
+                         AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
+                      itr_const, nrs_const, alpha_const, nbhd_vol_const,
+                      cent_hat_const, lev_geom, srd_max_order);
 }
 /** @} */

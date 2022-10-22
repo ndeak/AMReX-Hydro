@@ -44,13 +44,23 @@ def get_amrex_hydro_version():
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.mathjax',
+              'sphinxcontrib.bibtex',
               'sphinx.ext.githubpages',
               'sphinx.ext.viewcode',
               'sphinx.ext.intersphinx',
+              'sphinx.ext.autosectionlabel',
+              'sphinx_toolbox.collapse',
               'breathe']
 
+# Allow for same subheading in multiple sections
+autosectionlabel_prefix_document = True
+
+# bibtex
+bibtex_bibfiles = ["refs.bib"]
+bibtex_reference_style = 'author_year'
+
 intersphinx_mapping = {
-    'amrex_hydro': ('https://amrex-codes.github.io/amrex/hydro_html/', None)
+    'amrex': ('https://amrex-codes.github.io/amrex/docs_html/', None)
     # 'amrex_docs': ('../../../sphinx_documentation/build/html/',
     #               '../../sphinx_documentation/build/html/objects.inv')
 }
@@ -91,7 +101,18 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = []
+# -- These files are included with ..include:: directives
+exclude_patterns = ['CustomCommands.rst',
+                    'Godunov.rst',
+                    'SmallCellProblem.rst',
+                    'FluxRedistribution.rst',
+                    'StateRedistribution.rst',
+                    'MOL.rst',
+                    'AdvectiveTerm.rst',
+                    'Fluxes.rst',
+                    'bcs.rst',
+                    'Slopes.rst'
+]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -198,7 +219,7 @@ texinfo_documents = [
 
 
 # -- Breathe for Doxygen Conversion -------------------------------------------
-# see https://github.com/michaeljones/breathe 
+# see https://github.com/michaeljones/breathe
 
 breathe_projects = { "amrex-hydro": "../Doxygen/xml/"}
 

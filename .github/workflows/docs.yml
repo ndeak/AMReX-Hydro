@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Build and Deploy Docs
 on: [push, pull_request]
 jobs:
   build-and-deploy:
@@ -13,9 +13,12 @@ jobs:
         run: |
           .github/workflows/dependencies/documentation.sh
           echo "Installing python packages for docs..."
-          pip3 install sphinx sphinx_rtd_theme breathe
 
-      - name: Build Doxygen Docs 
+          pip install sphinx sphinx_rtd_theme breathe sphinxcontrib.bibtex
+          pip install -I docutils==0.16
+          pip install sphinx-toolbox
+
+      - name: Build Doxygen Docs
         run: |
           ./build_doxygen_docs.sh
 

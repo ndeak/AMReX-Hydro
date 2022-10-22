@@ -1,0 +1,4 @@
+CEXE_headers += hydro_bds.H
+
+CEXE_sources += hydro_bds_edge_state_$(DIM)D.cpp
+

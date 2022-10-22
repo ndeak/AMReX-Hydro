@@ -15,60 +15,6 @@
 namespace EBGodunov {
 
 
-    void ComputeAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int ncomp,
-                       amrex::MultiFab const& state, const int state_comp,
-                       AMREX_D_DECL( amrex::MultiFab const& umac,
-                                     amrex::MultiFab const& vmac,
-                                     amrex::MultiFab const& wmac),
-                       AMREX_D_DECL( amrex::MultiFab& xedge,
-                                     amrex::MultiFab& yedge,
-                                     amrex::MultiFab& zedge),
-                       const int  edge_comp,
-                       const bool known_edgestate,
-                       AMREX_D_DECL( amrex::MultiFab& xfluxes,
-                                     amrex::MultiFab& yfluxes,
-                                     amrex::MultiFab& zfluxes),
-                       int fluxes_comp,
-                       amrex::MultiFab const& fq,
-                       const int fq_comp,
-                       amrex::MultiFab const& divu,
-                       amrex::Vector<amrex::BCRec> const& h_bc,
-                       amrex::BCRec const* d_bc,
-                       amrex::Geometry const& geom,
-                       amrex::Gpu::DeviceVector<int>& iconserv,
-                       const amrex::Real dt,
-                       const bool is_velocity,
-                       std::string redistribution_type);
-
-    void ComputeSyncAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int ncomp,
-                           amrex::MultiFab const& state, const int state_comp,
-                           AMREX_D_DECL( amrex::MultiFab const& umac,
-                                         amrex::MultiFab const& vmac,
-                                         amrex::MultiFab const& wmac),
-                           AMREX_D_DECL( amrex::MultiFab const& ucorr,
-                                         amrex::MultiFab const& vcorr,
-                                         amrex::MultiFab const& wcorr),
-                           AMREX_D_DECL( amrex::MultiFab& xedge,
-                                         amrex::MultiFab& yedge,
-                                         amrex::MultiFab& zedge),
-                           const int  edge_comp,
-                           const bool known_edgestate,
-                           AMREX_D_DECL( amrex::MultiFab& xfluxes,
-                                         amrex::MultiFab& yfluxes,
-                                         amrex::MultiFab& zfluxes),
-                           int fluxes_comp,
-                           amrex::MultiFab const& fq,
-                           const int fq_comp,
-                           amrex::MultiFab const& divu,
-                           amrex::Vector<amrex::BCRec> const& h_bc,
-                           amrex::BCRec const* d_bc,
-                           amrex::Geometry const& geom,
-                           amrex::Gpu::DeviceVector<int>& iconserv,
-                           const amrex::Real dt,
-                           const bool is_velocity,
-                           std::string redistribution_type);
-
-
     void ExtrapVelToFaces ( amrex::MultiFab const& vel,
                             amrex::MultiFab const& vel_forces,
                             AMREX_D_DECL(amrex::MultiFab& u_mac,
@@ -76,8 +22,8 @@ namespace EBGodunov {
                                          amrex::MultiFab& w_mac),
                             amrex::Vector<amrex::BCRec> const& h_bcrec,
                             amrex::BCRec  const* d_bcrec,
-                            amrex::Geometry& geom,
-                            amrex::Real dt);
+                            const amrex::Geometry& geom,
+                            amrex::Real dt, amrex::MultiFab const* velocity_on_eb_inflow = nullptr);
 
 
     void ComputeAdvectiveVel (AMREX_D_DECL(amrex::Box const& xbx,
@@ -132,7 +78,7 @@ namespace EBGodunov {
                                  AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
                                               amrex::Array4<amrex::Real const> const& fcy,
                                               amrex::Array4<amrex::Real const> const& fcz),
-                                 amrex::Real* p);
+                                 amrex::Real* p, amrex::Array4<amrex::Real const> const& velocity_on_eb_inflow);
 
 
     void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
@@ -160,7 +106,8 @@ namespace EBGodunov {
                                          amrex::Array4<amrex::Real const> const& fcy,
                                          amrex::Array4<amrex::Real const> const& fcz),
                             amrex::Array4<amrex::Real const> const& ccent_arr,
-                            bool is_velocity );
+                            bool is_velocity,
+                            amrex::Array4<amrex::Real const> const& values_on_eb_inflow);
 
 } // namespace ebgodunov
 

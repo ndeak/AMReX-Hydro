@@ -19,7 +19,7 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
                             MultiFab& a_umac,
                             MultiFab& a_vmac,
                             const Vector<BCRec> & h_bcrec,
-			    const        BCRec  * d_bcrec,
+                            const        BCRec  * d_bcrec,
                             const Geometry& geom, Real l_dt,
                             bool use_ppm, bool use_forces_in_trans)
 {
@@ -248,11 +248,6 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
     }
     );
 
-    Array4<Real> divu = makeArray4(Ipx.dataPtr(), grow(bx,1), 1);
-    amrex::ParallelFor(Box(divu), [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
-        divu(i,j,k) = 0.0;
-    });
-
     //
     // X-Flux
     //
@@ -296,12 +291,12 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
 
         if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
         {
-            sth = amrex::min(sth,0.);
+            sth = amrex::min(sth,0.0_rt);
             stl = sth;
         }
         if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
         {
-             stl = amrex::max(stl,0.);
+             stl = amrex::max(stl,0.0_rt);
              sth = stl;
         }
 
@@ -355,12 +350,12 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
 
         if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
         {
-            sth = amrex::min(sth,0.);
+            sth = amrex::min(sth,0.0_rt);
             stl = sth;
         }
         if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
         {
-            stl = amrex::max(stl,0.);
+            stl = amrex::max(stl,0.0_rt);
             sth = stl;
         }
 

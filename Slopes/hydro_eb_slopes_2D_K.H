@@ -11,6 +11,8 @@
 
 #include <hydro_slopes_K.H>
 
+using namespace amrex::literals;
+
 namespace {
 
 #if (AMREX_SPACEDIM == 2)
@@ -34,16 +36,16 @@ amrex_calc_slopes_eb_given_A (int i, int j, int /*k*/, int n,
     constexpr int dim_a = 9;
     amrex::Real du[dim_a];
 
-    int lc=0;
+    int ll=0;
     for(int jj(-1); jj<=1; jj++){
       for(int ii(-1); ii<=1; ii++){
         if( flag(i,j,0).isConnected(ii,jj,0) &&
             ! (ii==0 && jj==0)) {
-          du[lc] = state(i+ii,j+jj,0,n) - state(i,j,0,n);
+          du[ll] = state(i+ii,j+jj,0,n) - state(i,j,0,n);
         } else {
-          du[lc] = 0.0;
+          du[ll] = 0.0;
         }
-        lc++;
+        ll++;
       }
     }
 
@@ -114,21 +116,21 @@ amrex_calc_slopes_eb_given_A_grown (int i, int j, int /*k*/, int n, int nx, int 
     amrex::Real du[dim_a];
 
     // Make sure to zero all the entries in du (since the loop below may not cover all 25)
-    int lc=0;
+    int ll=0;
     for(int jj(-2); jj<=2; jj++)
       for(int ii(-2); ii<=2; ii++)
       {
-          du[lc] = 0.0;
-          lc++;
+          du[ll] = 0.0;
+          ll++;
       }
 
-    lc=0;
+    ll=0;
     for(int jj(-ny); jj<=ny; jj++){
       for(int ii(-nx); ii<=nx; ii++){
         if(!flag(i+ii,j+jj,0).isCovered() && !(ii==0 && jj==0)) {
-           du[lc] = state(i+ii,j+jj,0,n) - state(i,j,0,n);
+           du[ll] = state(i+ii,j+jj,0,n) - state(i,j,0,n);
         }
-        lc++;
+        ll++;
       }
     }
 
@@ -690,11 +692,11 @@ amrex_calc_alpha_stencil(amrex::Real q_hat, amrex::Real q_max,
     amrex::Real small  = 1.0e-13;
 
     if ((q_hat-state) > small) {
-        alpha_temp = amrex::min(1.0,(q_max-state)/(q_hat-state));
+        alpha_temp = amrex::min(1.0_rt,(q_max-state)/(q_hat-state));
     } else if ((q_hat-state) < -small) {
-        alpha_temp = amrex::min(1.0,(q_min-state)/(q_hat-state));
+        alpha_temp = amrex::min(1.0_rt,(q_min-state)/(q_hat-state));
     } else {
-        alpha_temp = 1.0;
+        alpha_temp = 1.0_rt;
     }
     return amrex::min(alpha, alpha_temp);
 }

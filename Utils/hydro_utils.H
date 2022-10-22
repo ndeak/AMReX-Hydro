@@ -20,6 +20,77 @@
 
 namespace HydroUtils {
 
+/**
+ * \brief Compute edge state and flux. Most general version for use with multilevel synchonization.
+ *
+ */
+void
+ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
+                              amrex::Array4<amrex::Real const> const& q,
+                              AMREX_D_DECL(amrex::Array4<amrex::Real> const& flux_x,
+                                           amrex::Array4<amrex::Real> const& flux_y,
+                                           amrex::Array4<amrex::Real> const& flux_z),
+                              AMREX_D_DECL(amrex::Array4<amrex::Real> const& xface,
+                                           amrex::Array4<amrex::Real> const& yface,
+                                           amrex::Array4<amrex::Real> const& zface),
+                              bool knownFaceState,
+                              AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
+                                           amrex::Array4<amrex::Real const> const& vmac,
+                                           amrex::Array4<amrex::Real const> const& wmac),
+                              AMREX_D_DECL(amrex::Array4<amrex::Real const> const& uflux,
+                                           amrex::Array4<amrex::Real const> const& vflux,
+                                           amrex::Array4<amrex::Real const> const& wflux),
+                              amrex::Array4<amrex::Real const> const& divu,
+                              amrex::Array4<amrex::Real const> const& fq,
+                              amrex::Geometry geom,
+                              amrex::Real l_dt,
+                              amrex::Vector<amrex::BCRec> const& h_bcrec,
+                              const amrex::BCRec* d_bcrec,
+                              int const* iconserv,
+#ifdef AMREX_USE_EB
+                              const amrex::EBFArrayBoxFactory& ebfact,
+                              amrex::Array4<amrex::Real const> const& values_on_eb_inflow,
+#endif
+                              bool godunov_use_ppm, bool godunov_use_forces_in_trans,
+                              bool is_velocity, bool fluxes_are_area_weighted,
+                              std::string& advection_type);
+/**
+ * \brief Compute edge state and flux. For typical advection, and also allows for inflow on EB.
+ *
+ */
+void
+ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
+                              amrex::Array4<amrex::Real const> const& q,
+                              AMREX_D_DECL(amrex::Array4<amrex::Real> const& flux_x,
+                                           amrex::Array4<amrex::Real> const& flux_y,
+                                           amrex::Array4<amrex::Real> const& flux_z),
+                              AMREX_D_DECL(amrex::Array4<amrex::Real> const& xface,
+                                           amrex::Array4<amrex::Real> const& yface,
+                                           amrex::Array4<amrex::Real> const& zface),
+                              bool knownFaceState,
+                              AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
+                                           amrex::Array4<amrex::Real const> const& vmac,
+                                           amrex::Array4<amrex::Real const> const& wmac),
+                              amrex::Array4<amrex::Real const> const& divu,
+                              amrex::Array4<amrex::Real const> const& fq,
+                              amrex::Geometry geom,
+                              amrex::Real l_dt,
+                              amrex::Vector<amrex::BCRec> const& h_bcrec,
+                              const amrex::BCRec* d_bcrec,
+                              int const* iconserv,
+#ifdef AMREX_USE_EB
+                              const amrex::EBFArrayBoxFactory& ebfact,
+                              amrex::Array4<amrex::Real const> const& values_on_eb_inflow,
+#endif
+                              bool godunov_use_ppm, bool godunov_use_forces_in_trans,
+                              bool is_velocity, bool fluxes_are_area_weighted,
+                              std::string& advection_type);
+
+/**
+ * \brief Compute edge state and flux. For typical advection, but no inflow through EB.
+ *
+ */
+#ifdef AMREX_USE_EB
 void
 ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
                              amrex::Array4<amrex::Real const> const& q,
@@ -29,6 +100,7 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                              AMREX_D_DECL(amrex::Array4<amrex::Real> const& xface,
                                           amrex::Array4<amrex::Real> const& yface,
                                           amrex::Array4<amrex::Real> const& zface),
+                             bool knownFaceState,
                              AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
                                           amrex::Array4<amrex::Real const> const& vmac,
                                           amrex::Array4<amrex::Real const> const& wmac),
@@ -39,12 +111,27 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                              amrex::Vector<amrex::BCRec> const& h_bcrec,
                              const amrex::BCRec* d_bcrec,
                              int const* iconserv,
-#ifdef AMREX_USE_EB
                              const amrex::EBFArrayBoxFactory& ebfact,
-#endif
                              bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                              bool is_velocity, bool fluxes_are_area_weighted,
                              std::string& advection_type);
+#endif
+
+#ifdef AMREX_USE_EB
+void
+ExtrapVelToFaces ( amrex::MultiFab const& vel,
+                   amrex::MultiFab const& vel_forces,
+                   AMREX_D_DECL(amrex::MultiFab& u_mac,
+                                amrex::MultiFab& v_mac,
+                                amrex::MultiFab& w_mac),
+                   amrex::Vector<amrex::BCRec> const& h_bcrec,
+                   amrex::BCRec  const* d_bcrec,
+                   const amrex::Geometry& geom,
+                   amrex::Real l_dt,
+                   const amrex::EBFArrayBoxFactory& ebfact,
+                   bool godunov_use_ppm, bool godunov_use_forces_in_trans,
+                   std::string advection_type);
+#endif
 
 void
 ExtrapVelToFaces ( amrex::MultiFab const& vel,
@@ -54,13 +141,32 @@ ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                 amrex::MultiFab& w_mac),
                    amrex::Vector<amrex::BCRec> const& h_bcrec,
                    amrex::BCRec  const* d_bcrec,
-                   amrex::Geometry& geom,
+                   const amrex::Geometry& geom,
                    amrex::Real l_dt,
 #ifdef AMREX_USE_EB
                    const amrex::EBFArrayBoxFactory& ebfact,
+                   amrex::MultiFab const* velocity_on_eb_inflow,
 #endif
                    bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                    std::string advection_type);
+
+/**
+ * \brief If convective, compute convTerm = u dot grad q = div (u q) - q div(u).
+ *
+ */
+void
+ComputeConvectiveTerm ( amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
+                        amrex::Array4<amrex::Real const> const& q,
+                        AMREX_D_DECL(amrex::Array4<amrex::Real const> const& xface,
+                                     amrex::Array4<amrex::Real const> const& yface,
+                                     amrex::Array4<amrex::Real const> const& zface),
+                        amrex::Array4<amrex::Real const> const& divu,
+                        amrex::Array4<amrex::Real> const& convTerm,
+                        int const* iconserv,
+#ifdef AMREX_USE_EB
+                        const amrex::EBFArrayBoxFactory& ebfact,
+#endif
+                        std::string& advection_type);
 
 /**
  * \brief Compute Fluxes.
@@ -93,32 +199,6 @@ void ComputeDivergence ( amrex::Box const& bx,
                          const amrex::Real mult,
                          bool fluxes_are_area_weighted);
 
-
-#if (AMREX_SPACEDIM==2)
-
-
-void ComputeFluxesRZ ( amrex::Box const& bx,
-                       amrex::Array4<amrex::Real> const& fx,
-                       amrex::Array4<amrex::Real> const& fy,
-                       amrex::Array4<amrex::Real const> const& umac,
-                       amrex::Array4<amrex::Real const> const& vmac,
-                       amrex::Array4<amrex::Real const> const& xed,
-                       amrex::Array4<amrex::Real const> const& yed,
-                       amrex::Array4<amrex::Real const> const& areax,
-                       amrex::Array4<amrex::Real const> const& areay,
-                       const int ncomp,
-                       bool fluxes_are_area_weighted);
-
-void ComputeDivergenceRZ ( amrex::Box const& bx,
-                           amrex::Array4<amrex::Real> const& div,
-                           amrex::Array4<amrex::Real const> const& fx,
-                           amrex::Array4<amrex::Real const> const& fy,
-                           amrex::Array4<amrex::Real const> const& vol,
-                           const int ncomp,
-                           const amrex::Real mult,
-                           bool fluxes_are_area_weighted);
-#endif
-
 #ifdef AMREX_USE_EB
 
 void EB_ComputeFluxes ( amrex::Box const& bx,
@@ -149,52 +229,23 @@ void EB_ComputeDivergence ( amrex::Box const& bx,
                             const amrex::Real mult,
                             bool fluxes_are_area_weighted);
 
+
+void EB_ComputeDivergence ( amrex::Box const& bx,
+                            amrex::Array4<amrex::Real> const& div,
+                            AMREX_D_DECL( amrex::Array4<amrex::Real const> const& fx,
+                                          amrex::Array4<amrex::Real const> const& fy,
+                                          amrex::Array4<amrex::Real const> const& fz),
+                            amrex::Array4<amrex::Real const> const& vfrac,
+                            const int ncomp, amrex::Geometry const& geom,
+                            const amrex::Real mult,
+                            bool fluxes_are_area_weighted,
+                            amrex::Array4<amrex::Real const> const& eb_velocity,
+                            amrex::Array4<amrex::Real const> const& values_on_eb_inflow,
+                            amrex::Array4<amrex::EBCellFlag const> const& flag_arr,
+                            amrex::Array4<amrex::Real const> const& barea,
+                            amrex::Array4<amrex::Real const> const& bnorm);
 #endif
-
-void
-create_umac_grown (int lev, int nGrow, amrex::BoxArray& fine_grids,
-                   const amrex::Geometry& fine_geom,
-                   const amrex::Array<amrex::MultiFab*,AMREX_SPACEDIM> u_mac_crse,
-                   const amrex::Array<amrex::MultiFab*,AMREX_SPACEDIM> u_mac_fine,
-                   const amrex::IntVect& crse_ratio);
-
-void
-create_constrained_umac_grown (int lev, int nGrow, amrex::BoxArray& fine_grids, 
-                               const amrex::Geometry* crse_geom, const amrex::Geometry* fine_geom,
-                               const amrex::Array<amrex::MultiFab*,AMREX_SPACEDIM> u_mac_crse,
-                               const amrex::Array<amrex::MultiFab*,AMREX_SPACEDIM> u_mac_fine,
-                               const amrex::MultiFab* divu,
-                               const amrex::IntVect& crse_ratio);
 }
 
-// A placeholder for filling dirichlet boundary conditions on u_mac.
-struct FCFillExtDirDummy
-{
-    AMREX_GPU_HOST
-    constexpr FCFillExtDirDummy( ) {}
-
-    AMREX_GPU_DEVICE
-    void operator()(
-       const amrex::IntVect& /*iv*/,
-       amrex::Array4<amrex::Real> const& /*dummy*/,
-       const int /*dcomp*/,
-       const int numcomp,
-       amrex::GeometryData const& /*geom*/,
-       const amrex::Real /*time*/,
-       const amrex::BCRec* bcr,
-       const int bcomp,
-       const int /*orig_comp*/) const
-    {
-        // Abort if an calling this function was supposed to fill an ext_dir BC. 
-        for (int n = bcomp; n < bcomp+numcomp; ++n) {
-            const amrex::BCRec& bc = bcr[n];
-            if ( AMREX_D_TERM(   bc.lo(0) == amrex::BCType::ext_dir || bc.hi(0) == amrex::BCType::ext_dir,
-                              || bc.lo(1) == amrex::BCType::ext_dir || bc.hi(1) == amrex::BCType::ext_dir,
-                              || bc.lo(2) == amrex::BCType::ext_dir || bc.hi(2) == amrex::BCType::ext_dir ) ) { 
-               amrex::Abort("FCFillExtDirDummy is a dummy placeholder and should not be used in combination with BCType::ext_dir");
-            }
-        }
-    }
-};
 #endif
 /** @}*/
